@@ -17,6 +17,7 @@ uint32_t CACHE::find_victim(uint32_t triggering_cpu, uint64_t instr_id, uint32_t
   auto begin = std::next(std::begin(::last_used_cycles[this]), set * NUM_WAY);
   auto end = std::next(begin, NUM_WAY);
 
+// TODO: Write the S3FIFO Algorithm here to find_victim for page eviction.
   // Find the way whose last use cycle is most distant
   auto victim = std::min_element(begin, end);
   assert(begin <= victim);
