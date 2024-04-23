@@ -2,6 +2,7 @@
 #include <cassert>
 #include <map>
 #include <vector>
+#include <queue>
 
 #include "cache.h"
 
@@ -14,13 +15,14 @@ class S3_FIFO {
 private:
     const int cacheSize;
     const int smallQueueSize;
-    queue<CacheObject> smallQueue;
-    queue<CacheObject> mainQueue;
-    queue<CacheObject> ghostQueue;
-    unordered_map<int, CacheObject> cacheMap;
+    const int NUM_WAY;
+    std::queue<CacheObject> smallQueue;
+    std::queue<CacheObject> mainQueue;
+    std::queue<CacheObject> ghostQueue;
+    std::unordered_map<int, CacheObject> cacheMap;
 
 public:
-    S3_FIFO(int size) : cacheSize(size), smallQueueSize(size / 10) {}
+    S3_FIFO(int size, int num_way) : cacheSize(size), smallQueueSize(size / 10) , NUM_WAY(num_way){}
     //need to set up main queue size and ghostQueue size to be 90% of cache size
 
     bool isInCache(int id) {
@@ -39,7 +41,7 @@ public:
             if (isTrackedInGhostQueue(id)) { //****************** NEED TO DELETE FROM GHOST********************
                 // Object tracked in ghost queue, insert into main queue
 
-                queue<CacheObject> tempGhost;
+                std::queue<CacheObject> tempGhost;
                 while (!ghostQueue.empty()) {
                     CacheObject obj = ghostQueue.front();
                     ghostQueue.pop();
@@ -87,14 +89,15 @@ public:
     */
     void updateHotness(int objectId) {
         // Search in main queue
-        queue<CacheObject> tempMain;
+        std::queue<CacheObject> tempMain;
         bool foundMain = false;
 
         while (!mainQueue.empty()) {
             CacheObject obj = mainQueue.front();
             mainQueue.pop();
             if (obj.id == objectId) {
-                obj.hotness++;
+                if (obj.hotness != 255)
+			obj.hotness++;
                 foundMain = true;
             }
             tempMain.push(obj);
@@ -107,13 +110,14 @@ public:
         }
 
         //search in small queue
-        queue<CacheObject> tempSmall;
+        std::queue<CacheObject> tempSmall;
         bool foundSmall = false;
         while (!smallQueue.empty()) {
             CacheObject obj = smallQueue.front();
             smallQueue.pop();
             if (obj.id == objectId) {
-                obj.hotness++;
+		if(obj.hotness != 255)
+	                obj.hotness++;
                 foundSmall = true;
             }
             tempSmall.push(obj);
@@ -168,7 +172,7 @@ public:
             }
             else {
                 // Reset access bit and reinsert into main queue
-                obj.hotness = 0;
+                obj.hotness--;
                 mainQueue.push(obj);
             }
         }
@@ -176,9 +180,8 @@ public:
 
     uint32_t evictFromMainQueue(uint32_t set) { 
         while (true) {
-            queue<CacheObject> mQueue = mainQueue;
             CacheObject obj = mainQueue.front();
-            mQueue.pop();
+            mainQueue.pop();
 
             if (obj.hotness == 0) {
                 if (obj.id > set && obj.id - set < NUM_WAY){
@@ -191,7 +194,7 @@ public:
             }
             else {
                 // Reset access bit and reinsert into main queue
-                obj.hotness = 0;
+                obj.hotness--;
                 mainQueue.push(obj);
             }
         }
@@ -199,7 +202,7 @@ public:
 
 
     bool isTrackedInGhostQueue(int id) {
-        queue<CacheObject> temp = ghostQueue;
+        std::queue<CacheObject> temp = ghostQueue;
         while (!temp.empty()) {
             if (temp.front().id == id)
                 return true;
@@ -207,14 +210,14 @@ public:
         }
         return false;
     }
-
+/*
     void displayQueues() {
-        cout <<  "Format: ID(heat)" << endl;
-        cout << "Small Queue:";
+        std::cout <<  "Format: ID(heat)" << std::endl;
+        std::cout << "Small Queue:";
         displayQueueContents(smallQueue);
-        cout << endl << "Main Queue:";
+        std::cout << std::endl << "Main Queue:";
         displayQueueContents(mainQueue);
-        cout << endl << "Ghost Queue:";
+        std::cout << std::endl << "Ghost Queue:";
         displayQueueContents(ghostQueue);
         cout << endl << endl;
     }
@@ -222,19 +225,20 @@ public:
     void displayQueueContents(queue<CacheObject>& q) {
         queue<CacheObject> temp = q;
         while (!temp.empty()) {
-            cout << " " << temp.front().id << "(" << temp.front().hotness << ")" << " ";
+            std::cout << " " << temp.front().id << "(" << temp.front().hotness << ")" << " ";
             temp.pop();
         }
-    }
+     }*/
 };
 
 namespace
 {
 std::map<CACHE*, std::vector<uint64_t>> last_used_cycles;
-std::S3_FIFO cache (NUM_WAY * NUM_SET);
+S3_FIFO cache;
 }
 
-void CACHE::initialize_replacement() { ::last_used_cycles[this] = std::vector<uint64_t>(NUM_SET * NUM_WAY); }
+void CACHE::initialize_replacement() { ::last_used_cycles[this] = std::vector<uint64_t>(NUM_SET * NUM_WAY);
+cache (NUM_SET * NUM_WAY, NUM_WAY); }
 
 uint32_t CACHE::find_victim(uint32_t triggering_cpu, uint64_t instr_id, uint32_t set, const BLOCK* current_set, uint64_t ip, uint64_t full_addr, uint32_t type)
 {
