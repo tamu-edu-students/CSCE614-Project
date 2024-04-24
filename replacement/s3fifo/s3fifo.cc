@@ -186,7 +186,7 @@ public:
 
             if (obj.hotness == 0) {
                 if (obj.id > set && obj.id - set < NUM_WAY){
-                    return obj.id;
+                    return obj.id - set * NUM_WAY;
                 }
                 // ghostQueue.push(obj);
                 // if (ghostQueue.size() >= (cacheSize - smallQueueSize)) {
