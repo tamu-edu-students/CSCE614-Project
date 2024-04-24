@@ -6,23 +6,24 @@
 
 #include "cache.h"
 
+#define NUM_WAY 16
+
 struct CacheObject {
     uint32_t id;
     uint8_t hotness;  // Using a single bit for simplicity, can be expanded to two bits
 };
 
-class S3_FIFO {
+class S3_FIFO{
 private:
     const int cacheSize;
     const int smallQueueSize;
-    const int NUM_WAY;
     std::queue<CacheObject> smallQueue;
     std::queue<CacheObject> mainQueue;
     std::queue<CacheObject> ghostQueue;
     std::unordered_map<int, CacheObject> cacheMap;
 
 public:
-    S3_FIFO(int size, int num_way) : cacheSize(size), smallQueueSize(size / 10) , NUM_WAY(num_way){}
+    S3_FIFO(int size) : cacheSize(size), smallQueueSize(size / 8){}
     //need to set up main queue size and ghostQueue size to be 90% of cache size
 
     bool isInCache(int id) {
@@ -234,17 +235,17 @@ public:
 namespace
 {
 std::map<CACHE*, std::vector<uint64_t>> last_used_cycles;
-S3_FIFO cache;
+S3_FIFO cache (2048 * 16); // FIXME: More efficient way to 
 }
 
-void CACHE::initialize_replacement() { ::last_used_cycles[this] = std::vector<uint64_t>(NUM_SET * NUM_WAY);
-cache (NUM_SET * NUM_WAY, NUM_WAY); }
+
+void CACHE::initialize_replacement() { ::last_used_cycles[this] = std::vector<uint64_t>(NUM_SET * NUM_WAY); }
 
 uint32_t CACHE::find_victim(uint32_t triggering_cpu, uint64_t instr_id, uint32_t set, const BLOCK* current_set, uint64_t ip, uint64_t full_addr, uint32_t type)
 {
   auto begin = std::next(std::begin(::last_used_cycles[this]), set * NUM_WAY);
   auto end = std::next(begin, NUM_WAY);
-  auto victim = ::cache.evictFromMainQueue(set);
+  auto victim = std::next(begin, ::cache.evictFromMainQueue(set));
 
 //   // Find the way whose last use cycle is most distant
 //   auto victim = std::min_element(begin, end);
