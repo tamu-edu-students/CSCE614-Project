@@ -175,25 +175,35 @@ public:
     }
 
     uint32_t evictFromMainQueue(uint32_t set) { 
-    
+        //std::cout << mainQueue.size() << std::endl;
+        int size = mainQueue.size();
+        int cnt = 0;
+        bool exit = true;
         while (!mainQueue.empty()) {
+            //std::cout << "evictfrommain" << std::endl;
             CacheObject obj = mainQueue.front();
             mainQueue.pop();
 
             if (obj.hotness == 0) {
-	    	std::cout << "Is obj.id: " << obj.id << " within range (" << (set * NUM_WAY) << " and " << NUM_WAY << ")" << std::endl;
+	    	//std::cout << "Is obj.id: " << obj.id << " within range (" << (set * NUM_WAY) << " and " << NUM_WAY << ")" << std::endl;
                 if (obj.id > set * NUM_WAY && obj.id - set * NUM_WAY < NUM_WAY){ 
-		    cacheMap.erase(obj.id);
-		    for(;;);
+		            cacheMap.erase(obj.id);
                     return obj.id - (set * NUM_WAY);
                 }
             }
             else {
                 // Reset access bit and reinsert into main queue
                 obj.hotness--;
-                
+                if (obj.id > set * NUM_WAY && obj.id - set * NUM_WAY < NUM_WAY){ 
+                    exit=false;
+                }
             }
-	    mainQueue.push(obj);
+	        mainQueue.push(obj);
+            cnt++;
+            if (cnt == size && exit) {
+                //std::cout << "random" << std::endl;
+                return 0;
+            }
         }
     }
 
