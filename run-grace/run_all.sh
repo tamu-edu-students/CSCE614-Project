@@ -36,7 +36,7 @@ mem_traces=(
 #     # "/scratch/user/djimenez/speccpu/654.roms_s-523B.champsimtrace.xz"
 # )
 
-binaries="build/exe"
+binaries="build/bin"
 
 mkdir -p "out"
 
