@@ -10,7 +10,7 @@
 
 struct CacheObject {
     uint32_t id;
-    uint8_t hotness;  // Using a single bit for simplicity, can be expanded to two bits
+    uint8_t hotness;  // Using 2 bytes
 };
 
 class S3_FIFO{
@@ -32,16 +32,14 @@ public:
 
     void accessObject(int id) {
         if (isInCache(id)) {
-            // Object exists in cache, update access bit and reinsert into main queue
+            // Object exists in cache (Cache Hit), update access bit and reinsert into main queue
             cacheMap[id].hotness++;
             updateHotness(id);
             //cout << "Cache hit for id: " << id << endl;
         }
         else {
-            // Cache miss
-            if (isTrackedInGhostQueue(id)) { //****************** NEED TO DELETE FROM GHOST********************
-                // Object tracked in ghost queue, insert into main queue
-
+            // Cache miss. Check Ghost Queue for id.
+            if (isTrackedInGhostQueue(id)) {
                 std::queue<CacheObject> tempGhost;
                 while (!ghostQueue.empty()) {
                     CacheObject obj = ghostQueue.front();
@@ -159,20 +157,16 @@ public:
     * -Jonathan
     */
     uint32_t evictFromMainQueue() { 
-        while (true) {
+        while (!mainQueue.empty()) {
             CacheObject obj = mainQueue.front();
             mainQueue.pop();
+	    //if hotness is 0, remove from main queue and clear from cache
             if (obj.hotness == 0) {
-                // ghostQueue.push(obj);
                 cacheMap.erase(obj.id);
-                // if (ghostQueue.size() >= (cacheSize - smallQueueSize)) {
-                //     ghostQueue.pop();
-                // }
                 return obj.id;
-                break;
             }
             else {
-                // Reset access bit and reinsert into main queue
+                // Reduce hotness of id and reinsert into main queue
                 obj.hotness--;
                 mainQueue.push(obj);
             }
@@ -180,24 +174,25 @@ public:
     }
 
     uint32_t evictFromMainQueue(uint32_t set) { 
-        while (true) {
+    
+        while (!mainQueue.empty()) {
             CacheObject obj = mainQueue.front();
             mainQueue.pop();
 
             if (obj.hotness == 0) {
-                if (obj.id > set && obj.id - set < NUM_WAY){
-                    return obj.id - set * NUM_WAY;
+	    	std::cout << "Is obj.id: " << obj.id << " within range (" << (set * NUM_WAY) << " and " << NUM_WAY << ")" << std::endl;
+                if (obj.id > set * NUM_WAY && obj.id - set * NUM_WAY < NUM_WAY){ 
+		    cacheMap.erase(obj.id);
+		    for(;;);
+                    return obj.id - (set * NUM_WAY);
                 }
-                // ghostQueue.push(obj);
-                // if (ghostQueue.size() >= (cacheSize - smallQueueSize)) {
-                //     ghostQueue.pop();
-                // }
             }
             else {
                 // Reset access bit and reinsert into main queue
                 obj.hotness--;
-                mainQueue.push(obj);
+                
             }
+	    mainQueue.push(obj);
         }
     }
 
