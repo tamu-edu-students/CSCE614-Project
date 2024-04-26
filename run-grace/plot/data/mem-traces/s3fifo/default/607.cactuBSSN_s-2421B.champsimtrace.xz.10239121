@@ -1,0 +1,15 @@
+s3fifo: /scratch/user/mckinsey/CSCE614-Project/replacement/s3fifo/s3fifo.cc:253: uint32_t CACHE::repl_replacementDs3fifo_find_victim(uint32_t, uint64_t, uint32_t, const CACHE::BLOCK*, uint64_t, uint64_t, uint32_t): Assertion `victim < end' failed.
+WARNING: physical memory size is smaller than virtual memory size.
+
+*** ChampSim Multicore Out-of-Order Simulator ***
+Warmup Instructions: 100000000
+Simulation Instructions: 100000000
+Number of CPUs: 1
+Page size: 4096
+
+Off-chip DRAM Size: 4 GiB Channels: 1 Width: 64-bit Data Race: 3200 MT/s
+/var/spool/slurmd/job10239121/slurm_script: line 19: 129869 Aborted                 (core dumped) $bin --warmup-instructions $warmup_instructions --simulation-instructions $simulation_instructions $trace
+
+real	0m23.610s
+user	0m23.155s
+sys	0m0.249s
