@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --time=16:00:00
-#SBATCH --mem=10GB
+#SBATCH --time=8:00:00
+#SBATCH --mem=8GB
 #SBATCH --ntasks=1
 
 bin=$1

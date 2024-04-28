@@ -3,11 +3,14 @@
 #include <map>
 #include <vector>
 #include <queue>
-#include <iostream>
+//#include <iostream>
 
 #include "cache.h"
 
 #define NUM_WAY 16
+
+int randcnt = 0;
+int fifocnt = 0;
 
 struct CacheObject {
     uint32_t id;
@@ -34,7 +37,8 @@ public:
     void accessObject(int id) {
         if (isInCache(id)) {
             // Object exists in cache (Cache Hit), update access bit and reinsert into main queue
-            cacheMap[id].hotness++;
+            if (cacheMap[id].hotness < 255)
+                cacheMap[id].hotness++;
             updateHotness(id);
             //cout << "Cache hit for id: " << id << endl;
         }
@@ -97,7 +101,7 @@ public:
             mainQueue.pop();
             if (obj.id == objectId) {
                 if (obj.hotness != 255)
-			obj.hotness++;
+			        obj.hotness++;
                 foundMain = true;
             }
             tempMain.push(obj);
@@ -116,7 +120,7 @@ public:
             CacheObject obj = smallQueue.front();
             smallQueue.pop();
             if (obj.id == objectId) {
-		if(obj.hotness != 255)
+		        if(obj.hotness != 255)
 	                obj.hotness++;
                 foundSmall = true;
             }
@@ -175,7 +179,7 @@ public:
     }
 
     uint32_t evictFromMainQueue(uint32_t set) { 
-        //std::cout << mainQueue.size() << std::endl;
+        //std::cout << "IN EFMQ" << std::endl;
         int size = mainQueue.size();
         int cnt = 0;
         bool exit = true;
@@ -187,8 +191,13 @@ public:
             if (obj.hotness == 0) {
 	    	//std::cout << "Is obj.id: " << obj.id << " within range (" << (set * NUM_WAY) << " and " << NUM_WAY << ")" << std::endl;
                 if (obj.id > set * NUM_WAY && obj.id - set * NUM_WAY < NUM_WAY){ 
-		            cacheMap.erase(obj.id);
-                    return obj.id - (set * NUM_WAY);
+		            //std::cout << "Using fifo" << std::endl;
+                    fifocnt++;
+                    //std::cout << "fifo: " << fifocnt << std::endl;
+                    cacheMap.erase(obj.id);
+                    int victim = obj.id - (set * NUM_WAY);
+                    //std::cout << victim << std::endl;
+                    return victim;
                 }
             }
             else {
@@ -201,10 +210,15 @@ public:
 	        mainQueue.push(obj);
             cnt++;
             if (cnt == size && exit) {
-                //std::cout << "random" << std::endl;
-                return 0;
+                //std::cout << "Using Random" << std::endl;
+                randcnt++;
+                //std::cout << "rand: " << randcnt << std::endl;
+                int victim = rand() % NUM_WAY;
+                //std::cout << victim << std::endl;
+                return victim;
             }
         }
+        return rand() % NUM_WAY;;
     }
 
 
@@ -249,15 +263,16 @@ void CACHE::initialize_replacement() { ::last_used_cycles[this] = std::vector<ui
 
 uint32_t CACHE::find_victim(uint32_t triggering_cpu, uint64_t instr_id, uint32_t set, const BLOCK* current_set, uint64_t ip, uint64_t full_addr, uint32_t type)
 {
-  auto begin = std::next(std::begin(::last_used_cycles[this]), set * NUM_WAY);
-  auto end = std::next(begin, NUM_WAY);
-  auto victim = std::next(begin, ::cache.evictFromMainQueue(set));
+    auto begin = std::next(std::begin(::last_used_cycles[this]), set * NUM_WAY);
+    auto end = std::next(begin, NUM_WAY);
+    auto victim = std::next(begin, ::cache.evictFromMainQueue(set));
 
 //   // Find the way whose last use cycle is most distant
 //   auto victim = std::min_element(begin, end);
-  assert(begin <= victim);
-  assert(victim < end);
-//   return static_cast<uint32_t>(std::distance(begin, victim)); // cast protected by prior asserts
+    assert(begin <= victim);
+    //std::cout << std::distance(begin, victim) << std::endl;
+    //std::cout << std::distance(begin, end) << std::endl;
+    assert(victim < end);
     return static_cast<uint32_t>(std::distance(begin, victim));
 }
 
