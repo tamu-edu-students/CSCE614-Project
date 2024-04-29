@@ -3,11 +3,12 @@
 #include <map>
 #include <vector>
 #include <queue>
-// #include <iostream>
+//#include <iostream>
 
 #include "cache.h"
 
 #define NUM_WAY 16
+#define MAX_HOT 255
 
 int randcnt = 0;
 int fifocnt = 0;
@@ -42,7 +43,7 @@ public:
         if (isInCache(id))
         {
             // Object exists in cache (Cache Hit), update access bit and reinsert into main queue
-            if (cacheMap[id].hotness < 255)
+            if (cacheMap[id].hotness < MAX_HOT)
                 cacheMap[id].hotness++;
             updateHotness(id);
             // cout << "Cache hit for id: " << id << endl;
@@ -115,7 +116,7 @@ public:
             mainQueue.pop();
             if (obj.id == objectId)
             {
-                if (obj.hotness != 255)
+                if (obj.hotness != MAX_HOT)
                     obj.hotness++;
                 foundMain = true;
             }
@@ -140,7 +141,7 @@ public:
             smallQueue.pop();
             if (obj.id == objectId)
             {
-                if (obj.hotness != 255)
+                if (obj.hotness != MAX_HOT)
                     obj.hotness++;
                 foundSmall = true;
             }
@@ -228,7 +229,7 @@ public:
                 {
                     // std::cout << "Using fifo" << std::endl;
                     fifocnt++;
-                    // std::cout << "fifo: " << fifocnt << std::endl;
+                    //std::cout << "fifo: " << fifocnt << std::endl;
                     cacheMap.erase(obj.id);
                     int victim = obj.id - (set * NUM_WAY);
                     // std::cout << victim << std::endl;
@@ -250,12 +251,14 @@ public:
             {
                 // std::cout << "Using Random" << std::endl;
                 randcnt++;
-                // std::cout << "rand: " << randcnt << std::endl;
+                //std::cout << "rand: " << randcnt << std::endl;
                 int victim = rand() % NUM_WAY;
                 // std::cout << victim << std::endl;
                 return victim;
             }
         }
+        randcnt++;
+        //std::cout << "rand: " << randcnt << std::endl;
         return rand() % NUM_WAY;
     }
 
