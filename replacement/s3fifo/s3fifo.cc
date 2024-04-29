@@ -200,16 +200,17 @@ public:
         std::queue<CacheObject> tempGhost;
         bool foundGhost = false;
         uint32_t ghostVictim;
+        uint32_t comb = set * NUM_WAY;
 
         while (!ghostQueue.empty())
         {
             CacheObject obj = ghostQueue.front();
             ghostQueue.pop();
             // changed to obj.id >= set * NUM_WAY because it is inclusive of begin but not end. Also added !findGhost to only find the first id in range for the ghost queue
-            if (obj.id >= set * NUM_WAY && obj.id  < ((set * NUM_WAY) + NUM_WAY) && !foundGhost)
+            if (obj.id >= comb && obj.id  < (comb + NUM_WAY) && !foundGhost)
             {
                 foundGhost = true;
-                ghostVictim = obj.id - (set * NUM_WAY);
+                ghostVictim = obj.id - comb;
                 cacheMap.erase(obj.id);
             } else {
                 tempGhost.push(obj);
@@ -231,13 +232,12 @@ public:
         uint32_t cnt = 0;
         bool noExit = false;
 
-
         while (cnt < size || noExit) //will exit loop if all main queue values are checked an none are in the id range
         {
             // std::cout << "evictfrommain" << std::endl;
             CacheObject obj = mainQueue.front();
             mainQueue.pop();
-            if (obj.id >= set * NUM_WAY && obj.id - set * NUM_WAY < NUM_WAY) //check to see if the object is within the range, otherwise leave it alone
+            if (obj.id >= comb && obj.id - comb < NUM_WAY) //check to see if the object is within the range, otherwise leave it alone
             {
                 if (obj.hotness == 0)
                 {
@@ -245,7 +245,7 @@ public:
                     //fifocntMain++;
                     //std::cout << "fifo: " << fifocnt << std::endl;
                     cacheMap.erase(obj.id);
-                    uint32_t victim = obj.id - (set * NUM_WAY);
+                    uint32_t victim = obj.id - comb;
                     return victim;
                 }else{
                     obj.hotness--; //removing the hotness from the values in the id range to prevent removing hotness unnecessarily on other values in mainqueue
@@ -267,7 +267,7 @@ public:
             // std::cout << "evictfrommain" << std::endl;
             CacheObject obj = smallQueue.front();
             smallQueue.pop();
-            if (obj.id >= set * NUM_WAY && obj.id - set * NUM_WAY < NUM_WAY) //check to see if the object is within the range, otherwise leave it alone
+            if (obj.id >= comb && obj.id - comb < NUM_WAY) //check to see if the object is within the range, otherwise leave it alone
             {
                 if (obj.hotness == 0)
                 {
@@ -275,7 +275,7 @@ public:
                     //fifocntSmall++;
 
                     cacheMap.erase(obj.id);
-                    uint32_t victim = obj.id - (set * NUM_WAY);
+                    uint32_t victim = obj.id - comb;
                     // std::cout << victim << std::endl;
 
                     while(cnt < size-1){ //passing through the rest of small queue so that the order is the same as we started (excluding the victim)
