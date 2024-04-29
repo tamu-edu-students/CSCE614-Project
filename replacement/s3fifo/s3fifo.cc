@@ -11,7 +11,9 @@
 #define MAX_HOT 255
 
 int randcnt = 0;
-int fifocnt = 0;
+int fifocntMain = 0;
+int fifocntGhost = 0;
+int fifocntSmall = 0;
 
 struct CacheObject
 {
@@ -122,19 +124,14 @@ public:
             }
             tempMain.push(obj);
         }
+        mainQueue = tempMain;
         if (foundMain)
         {
-            mainQueue = tempMain;
             return;
-        }
-        else
-        {
-            mainQueue = tempMain;
         }
 
         // search in small queue
         std::queue<CacheObject> tempSmall;
-        bool foundSmall = false;
         while (!smallQueue.empty())
         {
             CacheObject obj = smallQueue.front();
@@ -143,19 +140,10 @@ public:
             {
                 if (obj.hotness != MAX_HOT)
                     obj.hotness++;
-                foundSmall = true;
             }
             tempSmall.push(obj);
         }
-        if (foundSmall)
-        {
-            smallQueue = tempSmall;
-            return;
-        }
-        else
-        {
-            smallQueue = tempSmall;
-        }
+        smallQueue = tempSmall;
         return;
     }
 
@@ -171,7 +159,7 @@ public:
         if (obj.hotness == 0)
         {
             ghostQueue.push(obj);
-            cacheMap.erase(obj.id);
+            //cacheMap.erase(obj.id); commenting out this to test caching format
             if (ghostQueue.size() >= (cacheSize - smallQueueSize))
             {
                 ghostQueue.pop();
@@ -212,12 +200,116 @@ public:
         return -1;
     }
 
-    uint32_t evictFromMainQueue(uint32_t set)
+    uint32_t evictFromQueue(uint32_t set)
     {
+
+        //****************************************************************************************************************************
+        //checking for ID in ghostqueue since it is no longer removed from cache
+        std::queue<CacheObject> tempGhost;
+        bool foundGhost = false;
+        int ghostVictim;
+
+        while (!ghostQueue.empty())
+        {
+            CacheObject obj = ghostQueue.front();
+            ghostQueue.pop();
+            // changed to obj.id >= set * NUM_WAY because it is inclusive of begin but not end. Also added !findGhost to only find the first id in range for the ghost queue
+            if (obj.id >= set * NUM_WAY && obj.id  < ((set * NUM_WAY) + NUM_WAY) && !foundGhost)
+            {
+                foundGhost = true;
+                ghostVictim = obj.id - (set * NUM_WAY);
+                cacheMap.erase(obj.id);
+            } else {
+                tempGhost.push(obj);
+            }
+        }
+        ghostQueue = tempGhost;
+        if (foundGhost)
+        {
+            fifocntGhost++;
+            return ghostVictim;
+        }
+
+
+
+        //****************************************************************************************************************************
+
         // std::cout << "IN EFMQ" << std::endl;
         int size = mainQueue.size();
         int cnt = 0;
-        bool exit = true;
+        bool noExit = false;
+
+
+        while (cnt < size || noExit) //will exit loop if all main queue values are checked an none are in the id range
+        {
+            // std::cout << "evictfrommain" << std::endl;
+            CacheObject obj = mainQueue.front();
+            mainQueue.pop();
+            if (obj.id >= set * NUM_WAY && obj.id - set * NUM_WAY < NUM_WAY) //check to see if the object is within the range, otherwise leave it alone
+            {
+                if (obj.hotness == 0)
+                {
+                    // std::cout << "Using fifo" << std::endl;
+                    fifocntMain++;
+                    //std::cout << "fifo: " << fifocnt << std::endl;
+                    cacheMap.erase(obj.id);
+                    int victim = obj.id - (set * NUM_WAY);
+                    return victim;
+                }else{
+                    obj.hotness--; //removing the hotness from the values in the id range to prevent removing hotness unnecessarily on other values in mainqueue
+                    noExit = true;
+                }
+            }
+            mainQueue.push(obj);
+            cnt++;
+
+        }
+        //****************************************************************************************************************************
+        //checking small queue since no id is in range for ghost and main
+        size = smallQueue.size();
+        cnt = 0;
+        noExit = false;
+
+        while (cnt < size || noExit) //will exit loop if all main queue values are checked an none are in the id range
+        {
+            // std::cout << "evictfrommain" << std::endl;
+            CacheObject obj = smallQueue.front();
+            smallQueue.pop();
+            if (obj.id >= set * NUM_WAY && obj.id - set * NUM_WAY < NUM_WAY) //check to see if the object is within the range, otherwise leave it alone
+            {
+                if (obj.hotness == 0)
+                {
+                    // std::cout << "Using fifo" << std::endl;
+                    fifocntSmall++;
+
+                    cacheMap.erase(obj.id);
+                    int victim = obj.id - (set * NUM_WAY);
+                    // std::cout << victim << std::endl;
+
+                    while(cnt < size-1){ //passing through the rest of small queue so that the order is the same as we started (excluding the victim)
+                        obj = smallQueue.front();
+                        smallQueue.pop();
+                        smallQueue.push(obj);
+                        cnt++;
+                    }
+
+                    return victim;
+                }else{
+                    obj.hotness--; //removing the hotness from the values in the id range to prevent removing hotness unnecessarily on other values in mainqueue
+                    noExit = true;
+                }
+            }
+            smallQueue.push(obj);
+            cnt++;
+
+        }
+        //****************************************************************************************************************************
+
+        /*Commenting out since I rewrote the main queue checker
+        int size = mainQueue.size();
+        int cnt = 0;
+        bool Exit = false;
+
         while (!mainQueue.empty())
         {
             // std::cout << "evictfrommain" << std::endl;
@@ -259,8 +351,11 @@ public:
                 return victim;
             }
         }
+        */
+
+        //If it is not in small, ghost, or main queues it will return a random value. This should normally never happen.
+        //std::cout << "random: " << randcnt << std::endl
         randcnt++;
-        //std::cout << "rand: " << randcnt << std::endl;
         return rand() % NUM_WAY;
     }
 
@@ -308,7 +403,8 @@ uint32_t CACHE::find_victim(uint32_t triggering_cpu, uint64_t instr_id, uint32_t
 {
     auto begin = std::next(std::begin(::last_used_cycles[this]), set * NUM_WAY);
     auto end = std::next(begin, NUM_WAY);
-    auto victim = std::next(begin, ::cache.evictFromMainQueue(set));
+    auto victim = std::next(begin, ::cache.evictFromQueue(set));
+    //std::cout << "fifoMain: " << fifocntMain << ", fifoSmall: " << fifocntSmall << ", fifoGhost: " << fifocntGhost << ", rand: " << randcnt << std::endl;
 
     //   // Find the way whose last use cycle is most distant
     //   auto victim = std::min_element(begin, end);
