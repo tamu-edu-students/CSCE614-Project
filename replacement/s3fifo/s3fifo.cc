@@ -208,7 +208,8 @@ public:
                 mainQueue.push(obj);
             }
         }
-        return rand() % NUM_WAY;
+        // TODO: What to return if mainqueue empty??
+        return -1;
     }
 
     uint32_t evictFromMainQueue(uint32_t set)
