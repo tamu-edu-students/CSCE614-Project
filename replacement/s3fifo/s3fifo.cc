@@ -22,23 +22,23 @@ struct CacheObject
 class S3_FIFO
 {
 private:
-    const int cacheSize;
-    const int smallQueueSize;
+    const uint32_t cacheSize;
+    const uint32_t smallQueueSize;
     std::queue<CacheObject> smallQueue;
     std::queue<CacheObject> mainQueue;
     std::queue<CacheObject> ghostQueue;
-    std::unordered_map<int, CacheObject> cacheMap;
+    std::unordered_map<uint32_t, CacheObject> cacheMap;
 
 public:
-    S3_FIFO(int size) : cacheSize(size), smallQueueSize(size / 8) {}
+    S3_FIFO(uint32_t size) : cacheSize(size), smallQueueSize(size / 8) {}
     // need to set up main queue size and ghostQueue size to be 90% of cache size
 
-    bool isInCache(int id)
+    bool isInCache(uint32_t id)
     {
         return cacheMap.find(id) != cacheMap.end();
     }
 
-    void accessObject(int id)
+    void accessObject(uint32_t id)
     {
         if (isInCache(id))
         {
@@ -78,7 +78,7 @@ public:
         }
     }
 
-    void insertIntoSmallQueue(int id)
+    void insertIntoSmallQueue(uint32_t id)
     {
         if (smallQueue.size() >= smallQueueSize)
         {
@@ -89,7 +89,7 @@ public:
         cacheMap[id] = newObj;
     }
 
-    void insertIntoMainQueue(int id)
+    void insertIntoMainQueue(uint32_t id)
     {
         if (mainQueue.size() >= (cacheSize - smallQueueSize))
         {
@@ -104,7 +104,7 @@ public:
     /*
      * created steps to check in ghost and small queue. Can probably be simplified more.
      */
-    void updateHotness(int objectId)
+    void updateHotness(uint32_t objectId)
     {
         // Search in main queue
         std::queue<CacheObject> tempMain;
@@ -208,6 +208,7 @@ public:
                 mainQueue.push(obj);
             }
         }
+        return rand() % NUM_WAY;
     }
 
     uint32_t evictFromMainQueue(uint32_t set)
@@ -262,7 +263,7 @@ public:
         return rand() % NUM_WAY;
     }
 
-    bool isTrackedInGhostQueue(int id)
+    bool isTrackedInGhostQueue(uint32_t id)
     {
         std::queue<CacheObject> temp = ghostQueue;
         while (!temp.empty())
