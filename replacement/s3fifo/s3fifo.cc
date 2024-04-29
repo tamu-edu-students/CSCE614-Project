@@ -10,11 +10,6 @@
 #define NUM_WAY 16
 #define MAX_HOT 255
 
-int randcnt = 0;
-int fifocntMain = 0;
-int fifocntGhost = 0;
-int fifocntSmall = 0;
-
 struct CacheObject
 {
     uint32_t id;
@@ -29,7 +24,7 @@ private:
     std::queue<CacheObject> smallQueue;
     std::queue<CacheObject> mainQueue;
     std::queue<CacheObject> ghostQueue;
-    std::unordered_map<uint32_t, CacheObject> cacheMap;
+    std::unordered_map<uint32_t, uint32_t> cacheMap;
 
 public:
     S3_FIFO(uint32_t size) : cacheSize(size), smallQueueSize(size / 8) {}
@@ -44,9 +39,6 @@ public:
     {
         if (isInCache(id))
         {
-            // Object exists in cache (Cache Hit), update access bit and reinsert into main queue
-            if (cacheMap[id].hotness < MAX_HOT)
-                cacheMap[id].hotness++;
             updateHotness(id);
             // cout << "Cache hit for id: " << id << endl;
         }
@@ -88,7 +80,7 @@ public:
         }
         CacheObject newObj = {id, 0};
         smallQueue.push(newObj);
-        cacheMap[id] = newObj;
+        cacheMap[id] = newObj.id;
     }
 
     void insertIntoMainQueue(uint32_t id)
@@ -99,7 +91,7 @@ public:
         }
         CacheObject newObj = {id, 0};
         mainQueue.push(newObj);
-        cacheMap[id] = newObj;
+        cacheMap[id] = newObj.id;
     }
 
     // Update hotness of an object
@@ -207,7 +199,7 @@ public:
         //checking for ID in ghostqueue since it is no longer removed from cache
         std::queue<CacheObject> tempGhost;
         bool foundGhost = false;
-        int ghostVictim;
+        uint32_t ghostVictim;
 
         while (!ghostQueue.empty())
         {
@@ -226,7 +218,7 @@ public:
         ghostQueue = tempGhost;
         if (foundGhost)
         {
-            fifocntGhost++;
+            //fifocntGhost++;
             return ghostVictim;
         }
 
@@ -235,8 +227,8 @@ public:
         //****************************************************************************************************************************
 
         // std::cout << "IN EFMQ" << std::endl;
-        int size = mainQueue.size();
-        int cnt = 0;
+        uint32_t size = mainQueue.size();
+        uint32_t cnt = 0;
         bool noExit = false;
 
 
@@ -250,10 +242,10 @@ public:
                 if (obj.hotness == 0)
                 {
                     // std::cout << "Using fifo" << std::endl;
-                    fifocntMain++;
+                    //fifocntMain++;
                     //std::cout << "fifo: " << fifocnt << std::endl;
                     cacheMap.erase(obj.id);
-                    int victim = obj.id - (set * NUM_WAY);
+                    uint32_t victim = obj.id - (set * NUM_WAY);
                     return victim;
                 }else{
                     obj.hotness--; //removing the hotness from the values in the id range to prevent removing hotness unnecessarily on other values in mainqueue
@@ -280,10 +272,10 @@ public:
                 if (obj.hotness == 0)
                 {
                     // std::cout << "Using fifo" << std::endl;
-                    fifocntSmall++;
+                    //fifocntSmall++;
 
                     cacheMap.erase(obj.id);
-                    int victim = obj.id - (set * NUM_WAY);
+                    uint32_t victim = obj.id - (set * NUM_WAY);
                     // std::cout << victim << std::endl;
 
                     while(cnt < size-1){ //passing through the rest of small queue so that the order is the same as we started (excluding the victim)
@@ -303,59 +295,6 @@ public:
             cnt++;
 
         }
-        //****************************************************************************************************************************
-
-        /*Commenting out since I rewrote the main queue checker
-        int size = mainQueue.size();
-        int cnt = 0;
-        bool Exit = false;
-
-        while (!mainQueue.empty())
-        {
-            // std::cout << "evictfrommain" << std::endl;
-            CacheObject obj = mainQueue.front();
-            mainQueue.pop();
-
-            if (obj.hotness == 0)
-            {
-                // std::cout << "Is obj.id: " << obj.id << " within range (" << (set * NUM_WAY) << " and " << NUM_WAY << ")" << std::endl;
-                if (obj.id > set * NUM_WAY && obj.id - set * NUM_WAY < NUM_WAY)
-                {
-                    // std::cout << "Using fifo" << std::endl;
-                    fifocnt++;
-                    //std::cout << "fifo: " << fifocnt << std::endl;
-                    cacheMap.erase(obj.id);
-                    int victim = obj.id - (set * NUM_WAY);
-                    // std::cout << victim << std::endl;
-                    return victim;
-                }
-            }
-            else
-            {
-                // Reset access bit and reinsert into main queue
-                obj.hotness--;
-                if (obj.id > set * NUM_WAY && obj.id - set * NUM_WAY < NUM_WAY)
-                {
-                    exit = false;
-                }
-            }
-            mainQueue.push(obj);
-            cnt++;
-            if (cnt == size && exit)
-            {
-                // std::cout << "Using Random" << std::endl;
-                randcnt++;
-                //std::cout << "rand: " << randcnt << std::endl;
-                int victim = rand() % NUM_WAY;
-                // std::cout << victim << std::endl;
-                return victim;
-            }
-        }
-        */
-
-        //If it is not in small, ghost, or main queues it will return a random value. This should normally never happen.
-        //std::cout << "random: " << randcnt << std::endl
-        randcnt++;
         return rand() % NUM_WAY;
     }
 
@@ -370,25 +309,6 @@ public:
         }
         return false;
     }
-    /*
-        void displayQueues() {
-            std::cout <<  "Format: ID(heat)" << std::endl;
-            std::cout << "Small Queue:";
-            displayQueueContents(smallQueue);
-            std::cout << std::endl << "Main Queue:";
-            displayQueueContents(mainQueue);
-            std::cout << std::endl << "Ghost Queue:";
-            displayQueueContents(ghostQueue);
-            cout << endl << endl;
-        }
-
-        void displayQueueContents(queue<CacheObject>& q) {
-            queue<CacheObject> temp = q;
-            while (!temp.empty()) {
-                std::cout << " " << temp.front().id << "(" << temp.front().hotness << ")" << " ";
-                temp.pop();
-            }
-         }*/
 };
 
 namespace
@@ -404,13 +324,7 @@ uint32_t CACHE::find_victim(uint32_t triggering_cpu, uint64_t instr_id, uint32_t
     auto begin = std::next(std::begin(::last_used_cycles[this]), set * NUM_WAY);
     auto end = std::next(begin, NUM_WAY);
     auto victim = std::next(begin, ::cache.evictFromQueue(set));
-    //std::cout << "fifoMain: " << fifocntMain << ", fifoSmall: " << fifocntSmall << ", fifoGhost: " << fifocntGhost << ", rand: " << randcnt << std::endl;
-
-    //   // Find the way whose last use cycle is most distant
-    //   auto victim = std::min_element(begin, end);
     assert(begin <= victim);
-    // std::cout << std::distance(begin, victim) << std::endl;
-    // std::cout << std::distance(begin, end) << std::endl;
     assert(victim < end);
     return static_cast<uint32_t>(std::distance(begin, victim));
 }
