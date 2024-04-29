@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=8:00:00
+#SBATCH --time=24:00:00
 #SBATCH --mem=8GB
 #SBATCH --ntasks=1
 

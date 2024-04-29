@@ -51,7 +51,7 @@ for bin in "$binaries"/*; do
             sbatch \
             --output="out/$binname/$tracename.%j" \
             --job-name="$binname-$tracename" \
-            job.sh $bin $trace 100000000 100000000
+            job.sh $bin $trace 200000000 1000000000
             echo $tracename
         fi
     done
