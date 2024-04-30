@@ -313,20 +313,19 @@ public:
 
 namespace
 {
-    std::map<CACHE *, std::vector<uint64_t>> last_used_cycles;
     S3_FIFO cache(2048 * 16); // FIXME: More efficient way to
 }
 
-void CACHE::initialize_replacement() { ::last_used_cycles[this] = std::vector<uint64_t>(NUM_SET * NUM_WAY); }
+void CACHE::initialize_replacement() {}
 
 uint32_t CACHE::find_victim(uint32_t triggering_cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type)
 {
-    auto begin = std::next(std::begin(::last_used_cycles[this]), set * NUM_WAY);
-    auto end = std::next(begin, NUM_WAY);
-    auto victim = std::next(begin, ::cache.evictFromQueue(set));
+    auto begin = set * NUM_WAY;
+    auto end = begin + NUM_WAY;
+    auto victim = begin + ::cache.evictFromQueue(set);
     assert(begin <= victim);
     assert(victim < end);
-    return static_cast<uint32_t>(std::distance(begin, victim));
+    return static_cast<uint32_t>(victim - begin);
 }
 
 void CACHE::update_replacement_state(uint32_t triggering_cpu, uint32_t set, uint32_t way, uint64_t full_addr, uint64_t ip, uint64_t victim_addr, uint32_t type,
@@ -335,7 +334,6 @@ void CACHE::update_replacement_state(uint32_t triggering_cpu, uint32_t set, uint
     // Mark the way as being used on the current cycle
     if (!hit || access_type{type} != access_type::WRITE)
     { // Skip this for writeback hits
-        ::last_used_cycles[this].at(set * NUM_WAY + way) = current_cycle;
         ::cache.accessObject(set * NUM_WAY + way);
     }
 }
