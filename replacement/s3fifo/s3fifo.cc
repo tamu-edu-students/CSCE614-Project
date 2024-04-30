@@ -41,9 +41,6 @@ public:
         {
             updateHotness(id);
             // cout << "Cache hit for id: " << id << endl;
-        }
-        else
-        {
             // Cache miss. Check Ghost Queue for id.
             if (isTrackedInGhostQueue(id))
             {
@@ -63,12 +60,11 @@ public:
                 }
                 ghostQueue = tempGhost;
             }
-            else
-            {
-                // Object not tracked in ghost queue, insert into small queue
-                insertIntoSmallQueue(id);
-            }
-            // cout << "Cache miss for id: " << id << endl;
+        }
+        else
+        {
+            // Object not tracked in ghost queue, insert into small queue
+            insertIntoSmallQueue(id);
         }
     }
 
