@@ -1,5 +1,0 @@
-/var/spool/slurmd/job10239022/slurm_script: line 19: 112266 Segmentation fault      (core dumped) $bin --warmup-instructions $warmup_instructions --simulation-instructions $simulation_instructions $trace
-
-real	0m1.375s
-user	0m1.261s
-sys	0m0.052s

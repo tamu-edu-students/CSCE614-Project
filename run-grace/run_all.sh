@@ -1,9 +1,6 @@
 #!/bin/bash
 
 traces="/scratch/user/djimenez/614/hw1/ersatz-benchmarks/traces"
-# mem_traces=(
-#     "/scratch/user/djimenez/614/hw1/ersatz-benchmarks/traces/600.perlbench_s_checkspam.champsim.xz"
-# )
 mem_traces=(
     "/scratch/user/djimenez/speccpu/602.gcc_s-1850B.champsimtrace.xz"
     "/scratch/user/djimenez/speccpu/602.gcc_s-2226B.champsimtrace.xz"
@@ -44,14 +41,14 @@ for bin in "$binaries"/*; do
     binname=$(basename $bin)
     mkdir -p "out/$binname"
     echo $binname
-    #for trace in "$traces"/*; do
-    for trace in "${mem_traces[@]}"; do
+    for trace in "$traces"/*; do
+    #for trace in "${mem_traces[@]}"; do
         if [ -f "$trace" ]; then
             tracename=$(basename $trace)
             sbatch \
             --output="out/$binname/$tracename.%j" \
             --job-name="$binname-$tracename" \
-            job.sh $bin $trace 200000000 1000000000
+            job.sh $bin $trace 100000000 500000000
             echo $tracename
         fi
     done
