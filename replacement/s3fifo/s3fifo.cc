@@ -7,7 +7,6 @@
 
 #include "cache.h"
 
-#define NUM_WAY 16
 #define MAX_HOT 255
 
 struct CacheObject
@@ -25,9 +24,10 @@ private:
     std::queue<CacheObject> mainQueue;
     std::queue<CacheObject> ghostQueue;
     std::unordered_map<uint32_t, uint32_t> cacheMap;
+    const uint32_t NUM_WAY;
 
 public:
-    S3_FIFO(uint32_t size) : cacheSize(size), smallQueueSize(size / 8) {}
+    S3_FIFO(uint32_t size, uint32_t num_way) : cacheSize(size), smallQueueSize(size / 8), NUM_WAY(num_way) {}
     // need to set up main queue size and ghostQueue size to be 90% of cache size
 
     bool isInCache(uint32_t id)
@@ -309,16 +309,16 @@ public:
 
 namespace
 {
-    S3_FIFO cache(2048 * 16); // FIXME: More efficient way to
+    S3_FIFO* cache; // FIXME: More efficient way to
 }
 
-void CACHE::initialize_replacement() {}
+void CACHE::initialize_replacement() {cache = new S3_FIFO(NUM_SET * NUM_WAY, NUM_WAY);}
 
 uint32_t CACHE::find_victim(uint32_t triggering_cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type)
 {
     auto begin = set * NUM_WAY;
     auto end = begin + NUM_WAY;
-    auto victim = begin + ::cache.evictFromQueue(set);
+    auto victim = begin + ::cache->evictFromQueue(set);
     assert(begin <= victim);
     assert(victim < end);
     return static_cast<uint32_t>(victim - begin);
@@ -330,7 +330,7 @@ void CACHE::update_replacement_state(uint32_t triggering_cpu, uint32_t set, uint
     // Mark the way as being used on the current cycle
     if (!hit || access_type{type} != access_type::WRITE)
     { // Skip this for writeback hits
-        ::cache.accessObject(set * NUM_WAY + way);
+        ::cache->accessObject(set * NUM_WAY + way);
     }
 }
 
