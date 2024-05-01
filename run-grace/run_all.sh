@@ -35,20 +35,20 @@ mem_traces=(
 
 binaries="build/bin"
 
-mkdir -p "out"
+mkdir -p "out-300M"
 
 for bin in "$binaries"/*; do
     binname=$(basename $bin)
-    mkdir -p "out/$binname"
+    mkdir -p "out-300M/$binname"
     echo $binname
-    for trace in "$traces"/*; do
-    #for trace in "${mem_traces[@]}"; do
+    #for trace in "$traces"/*; do
+    for trace in "${mem_traces[@]}"; do
         if [ -f "$trace" ]; then
             tracename=$(basename $trace)
             sbatch \
-            --output="out/$binname/$tracename.%j" \
+            --output="out-300M/$binname/$tracename.%j" \
             --job-name="$binname-$tracename" \
-            job.sh $bin $trace 100000000 500000000
+            job.sh $bin $trace 100000000 300000000
             echo $tracename
         fi
     done

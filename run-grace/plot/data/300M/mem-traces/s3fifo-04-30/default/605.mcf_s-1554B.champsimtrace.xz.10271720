@@ -1,0 +1,20 @@
+Simulation finished CPU 0 instructions: 300000004 cycles: 1388133714 cumulative IPC: 0.2161 (Simulation time: 02 hr 45 min 43 sec)
+Simulation complete CPU 0 instructions: 300000004 cycles: 1388133714 cumulative IPC: 0.2161 (Simulation time: 02 hr 45 min 43 sec)
+
+ChampSim completed all CPUs
+
+=== Simulation ===
+CPU 0 runs /scratch/user/djimenez/speccpu/605.mcf_s-1554B.champsimtrace.xz
+Region of Interest Statistics
+
+CPU 0 cumulative IPC: 0.2161 instructions: 300000004 cycles: 1388133714
+CPU 0 Branch Prediction Accuracy: 97.77% MPKI: 4.058 Average ROB Occupancy at Mispredict: 34.68
+Branch type MPKI
+BRANCH_DIRECT_JUMP: 0
+BRANCH_INDIRECT: 0
+BRANCH_CONDITIONAL: 4.06
+BRANCH_DIRECT_CALL: 0
+BRANCH_INDIRECT_CALL: 0
+BRANCH_RETURN: 0
+
+LLC TOTAL        ACCESS:   47035248 HIT:    2763943 MISS:   44271305

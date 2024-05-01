@@ -1,0 +1,23 @@
+Heartbeat CPU 0 instructions: 400000003 cycles: 2979326353 heartbeat IPC: 0.1019 cumulative IPC: 0.1019 (Simulation time: 04 hr 42 min 53 sec)
+Simulation finished CPU 0 instructions: 300000000 cycles: 2944339752 cumulative IPC: 0.1019 (Simulation time: 04 hr 42 min 53 sec)
+Simulation complete CPU 0 instructions: 300000000 cycles: 2944339752 cumulative IPC: 0.1019 (Simulation time: 04 hr 42 min 53 sec)
+
+ChampSim completed all CPUs
+
+=== Simulation ===
+CPU 0 runs /scratch/user/djimenez/speccpu/605.mcf_s-1644B.champsimtrace.xz
+Region of Interest Statistics
+
+CPU 0 cumulative IPC: 0.1019 instructions: 300000000 cycles: 2944339752
+CPU 0 Branch Prediction Accuracy: 93.09% MPKI: 8.585 Average ROB Occupancy at Mispredict: 71.31
+Branch type MPKI
+BRANCH_DIRECT_JUMP: 0
+BRANCH_INDIRECT: 0
+BRANCH_CONDITIONAL: 8.59
+BRANCH_DIRECT_CALL: 0
+BRANCH_INDIRECT_CALL: 0
+BRANCH_RETURN: 0
+
+LLC TOTAL        ACCESS:   57768764 HIT:   28544493 MISS:   29224271
+LLC LOAD         ACCESS:   12290687 HIT:    3021765 MISS:    9268922
+LLC RFO          ACCESS:   13118884 HIT:      40091 MISS:   13078793
